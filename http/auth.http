@@ -1,8 +1,49 @@
+### Invalid input — expect 400 Bad Request
 POST http://localhost:8080/api/v1/auth/register
 Content-Type: application/json
 
 {
   "name": "",
-  "email": "test@example.com",
+  "email": "not-an-email",
   "password": "123"
+}
+
+### Register a new user — expect 201 Created
+POST http://localhost:8080/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "name": "Nazar",
+  "email": "nazar.registration.check01@example.com",
+  "password": "TestPassword123!"
+}
+
+### Duplicate email — expect 409 Conflict
+POST http://localhost:8080/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "name": "Nazar",
+  "email": "nazar.registration.check01@example.com",
+  "password": "TestPassword123!"
+}
+
+### Register with mixed-case email — expect 201
+POST http://localhost:8080/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "name": "John",
+  "email": "JohnBoB.Check01@example.com",
+  "password": "TestPassword123!"
+}
+
+### Register the same email in lowercase — expect 409
+POST http://localhost:8080/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "name": "John",
+  "email": "johnbob.check01@example.com",
+  "password": "TestPassword123!"
 }

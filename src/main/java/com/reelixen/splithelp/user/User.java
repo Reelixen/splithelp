@@ -38,4 +38,20 @@ public class User {
         this.passwordHash = passwordHash;
         this.createdAt = Instant.now();
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }
