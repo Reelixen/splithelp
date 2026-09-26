@@ -39,19 +39,13 @@ public class User {
         this.createdAt = Instant.now();
     }
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() {return id;}
 
-    public String getName() {
-        return name;
-    }
+    public String getName() {return name;}
 
-    public String getEmail() {
-        return email;
-    }
+    public String getEmail() {return email;}
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
+    public Instant getCreatedAt() {return createdAt;}
+
+    public String getPasswordHash() {return passwordHash;}
 }
