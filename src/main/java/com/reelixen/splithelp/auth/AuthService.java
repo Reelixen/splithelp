@@ -4,6 +4,8 @@ import com.reelixen.splithelp.auth.dto.RegisterRequest;
 import com.reelixen.splithelp.auth.dto.RegisterResponse;
 import com.reelixen.splithelp.user.User;
 import com.reelixen.splithelp.user.UserRepository;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +32,18 @@ public class AuthService {
         String passwordHash = passwordEncoder.encode(request.password());
 
         User user = new User(request.name(), normalizedEmail, passwordHash);
-        User savedUser = userRepository.save(user);
+        User savedUser;
+
+        try {
+            savedUser = userRepository.save(user);
+        } catch (DataIntegrityViolationException exception) {
+            if (exception.getCause() instanceof ConstraintViolationException violation
+                    && "users_email_key".equals(violation.getConstraintName())) {
+                throw new EmailAlreadyExistsException("Email already in use");
+            }
+
+            throw exception;
+        }
 
         return new RegisterResponse(
                 savedUser.getId(),
