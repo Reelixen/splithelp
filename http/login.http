@@ -1,0 +1,52 @@
+### 1. Get a CSRF token; the HTTP client keeps the session cookie.
+GET http://localhost:8080/api/v1/auth/csrf
+
+> {%
+    client.global.set("csrfToken", response.body.token);
+%}
+
+### 2. Wrong password — expect 401 (use an existing account).
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "email": "nazar.registration.check01@example.com",
+  "password": "WrongPassword!"
+}
+
+### 3. Unknown email — expect the same 401 message.
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "email": "unknown.login.check@example.com",
+  "password": "WrongPassword!"
+}
+
+### 4. Valid credentials — expect 204 and a rotated session cookie.
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "email": "nazar.registration.check01@example.com",
+  "password": "TestPassword123!"
+}
+
+### 5. Refresh the CSRF token after successful login.
+GET http://localhost:8080/api/v1/auth/csrf
+
+> {%
+    client.global.set("csrfToken", response.body.token);
+%}
+
+### 6. Missing CSRF token — expect 403.
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "nazar.registration.check01@example.com",
+  "password": "TestPassword123!"
+}

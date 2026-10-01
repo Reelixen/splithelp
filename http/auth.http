@@ -1,6 +1,14 @@
+### Get a CSRF token before running registration requests.
+GET http://localhost:8080/api/v1/auth/csrf
+
+> {%
+    client.global.set("csrfToken", response.body.token);
+%}
+
 ### Invalid input — expect 400 Bad Request
 POST http://localhost:8080/api/v1/auth/register
 Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
 
 {
   "name": "",
@@ -11,6 +19,7 @@ Content-Type: application/json
 ### Register a new user — expect 201 Created
 POST http://localhost:8080/api/v1/auth/register
 Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
 
 {
   "name": "Nazar",
@@ -21,6 +30,7 @@ Content-Type: application/json
 ### Duplicate email — expect 409 Conflict
 POST http://localhost:8080/api/v1/auth/register
 Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
 
 {
   "name": "Nazar",
@@ -31,6 +41,7 @@ Content-Type: application/json
 ### Register with mixed-case email — expect 201
 POST http://localhost:8080/api/v1/auth/register
 Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
 
 {
   "name": "John",
@@ -41,6 +52,7 @@ Content-Type: application/json
 ### Register the same email in lowercase — expect 409
 POST http://localhost:8080/api/v1/auth/register
 Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
 
 {
   "name": "John",
