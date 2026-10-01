@@ -1,6 +1,8 @@
 package com.reelixen.splithelp.auth;
 
 import com.reelixen.splithelp.auth.dto.RegisterRequest;
+import com.reelixen.splithelp.auth.dto.CurrentUserResponse;
+import org.springframework.security.authentication.BadCredentialsException;
 import com.reelixen.splithelp.auth.dto.RegisterResponse;
 import com.reelixen.splithelp.user.User;
 import com.reelixen.splithelp.user.UserRepository;
@@ -19,6 +21,12 @@ public class AuthService {
     public AuthService(PasswordEncoder passwordEncoder, UserRepository userRepository){
         this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
+    }
+
+    public CurrentUserResponse getCurrentUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+        return new CurrentUserResponse(user.getId(), user.getName(), user.getEmail());
     }
 
     public RegisterResponse register(RegisterRequest request) {

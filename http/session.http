@@ -1,0 +1,43 @@
+### 1. Current user without cookies — expect 401.
+# @no-cookie-jar
+GET http://localhost:8080/api/v1/auth/me
+
+### 2. Get a CSRF token.
+GET http://localhost:8080/api/v1/auth/csrf
+
+> {%
+    client.global.set("csrfToken", response.body.token);
+%}
+
+### 3. Login with an existing account — expect 204.
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "email": "nazar.registration.check01@example.com",
+  "password": "TestPassword123!"
+}
+
+### 4. Current user — expect 200 with id, name and email only.
+GET http://localhost:8080/api/v1/auth/me
+
+### 5. Refresh the CSRF token after login.
+GET http://localhost:8080/api/v1/auth/csrf
+
+> {%
+    client.global.set("csrfToken", response.body.token);
+%}
+
+### 6. Logout without CSRF — expect 403; session must remain valid.
+POST http://localhost:8080/api/v1/auth/logout
+
+### 7. Still authenticated after rejected logout — expect 200.
+GET http://localhost:8080/api/v1/auth/me
+
+### 8. Logout with CSRF — expect 204 and an expired JSESSIONID cookie.
+POST http://localhost:8080/api/v1/auth/logout
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 9. Current user after logout — expect 401.
+GET http://localhost:8080/api/v1/auth/me

@@ -1,6 +1,7 @@
 package com.reelixen.splithelp.auth;
 
 import com.reelixen.splithelp.auth.dto.LoginRequest;
+import com.reelixen.splithelp.auth.dto.CurrentUserResponse;
 import com.reelixen.splithelp.auth.dto.RegisterRequest;
 import com.reelixen.splithelp.auth.dto.RegisterResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,6 +37,11 @@ public class AuthController {
         this.authenticationManager = authenticationManager;
         this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
         this.securityContextRepository = securityContextRepository;
+    }
+
+    @GetMapping("/me")
+    public CurrentUserResponse currentUser(Authentication authentication) {
+        return authService.getCurrentUser(authentication.getName());
     }
 
     @GetMapping("/csrf")

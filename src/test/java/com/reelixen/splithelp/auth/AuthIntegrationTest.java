@@ -28,16 +28,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = AuthController.class)
-@Import({SecurityConfig.class, CustomUserDetailsService.class, LoginIntegrationTest.ProbeController.class})
-class LoginIntegrationTest {
+@Import({SecurityConfig.class, CustomUserDetailsService.class, AuthService.class, AuthIntegrationTest.ProbeController.class})
+class AuthIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired PasswordEncoder passwordEncoder;
     @MockitoBean UserRepository userRepository;
-    @MockitoBean AuthService authService;
+
 
     @BeforeEach
     void setUp() {
         User user = new User("Nazar", "nazar@example.com", passwordEncoder.encode("TestPassword123!"));
+        org.springframework.test.util.ReflectionTestUtils.setField(user, "id", 6L);
         when(userRepository.findByEmail("nazar@example.com")).thenReturn(Optional.of(user));
     }
 
@@ -108,6 +109,73 @@ class LoginIntegrationTest {
                         .content(credentials("invalid-email", "")))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(userRepository);
+    }
+
+
+    @Test
+    void currentUserRequiresAuthentication() throws Exception {
+        mvc.perform(get("/api/v1/auth/me")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void logoutEndsOnlyCurrentSessionAndClearsCookie() throws Exception {
+        MockHttpSession first = loginSession();
+        MockHttpSession second = loginSession();
+        String oldId = first.getId();
+        mvc.perform(get("/api/v1/auth/me").session(first))
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"id\":6,\"name\":\"Nazar\",\"email\":\"nazar@example.com\"}"))
+                .andExpect(jsonPath("$.password").doesNotExist())
+                .andExpect(jsonPath("$.passwordHash").doesNotExist());
+        String token = csrfToken(first);
+        mvc.perform(post("/api/v1/auth/logout").session(first).header("X-CSRF-TOKEN", token))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""))
+                .andExpect(cookie().maxAge("JSESSIONID", 0));
+        assertTrue(first.isInvalid());
+        mvc.perform(get("/api/v1/auth/me").cookie(new jakarta.servlet.http.Cookie("JSESSIONID", oldId)))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/auth/me").session(second)).andExpect(status().isOk());
+    }
+
+    @Test
+    void logoutWithoutValidCsrfDoesNotEndSession() throws Exception {
+        MockHttpSession session = loginSession();
+        mvc.perform(post("/api/v1/auth/logout").session(session)).andExpect(status().isForbidden());
+        mvc.perform(post("/api/v1/auth/logout").session(session).header("X-CSRF-TOKEN", "invalid"))
+                .andExpect(status().isForbidden());
+        assertFalse(session.isInvalid());
+        mvc.perform(get("/api/v1/auth/me").session(session)).andExpect(status().isOk());
+    }
+
+    @Test
+    void getRequestCannotLogUserOut() throws Exception {
+        MockHttpSession session = loginSession();
+        mvc.perform(get("/api/v1/auth/logout").session(session));
+        assertFalse(session.isInvalid());
+        mvc.perform(get("/api/v1/auth/me").session(session)).andExpect(status().isOk());
+    }
+
+    @Test
+    void deletedUserCannotReadProfileFromOldSession() throws Exception {
+        MockHttpSession session = loginSession();
+        when(userRepository.findByEmail("nazar@example.com")).thenReturn(Optional.empty());
+        mvc.perform(get("/api/v1/auth/me").session(session)).andExpect(status().isUnauthorized());
+    }
+
+    private MockHttpSession loginSession() throws Exception {
+        MvcResult csrf = mvc.perform(get("/api/v1/auth/csrf")).andReturn();
+        MockHttpSession session = (MockHttpSession) csrf.getRequest().getSession(false);
+        String token = JsonPath.read(csrf.getResponse().getContentAsString(), "$.token");
+        mvc.perform(post("/api/v1/auth/login").session(session).header("X-CSRF-TOKEN", token)
+                        .contentType("application/json").content(credentials("nazar@example.com", "TestPassword123!")))
+                .andExpect(status().isNoContent());
+        return session;
+    }
+
+    private String csrfToken(MockHttpSession session) throws Exception {
+        MvcResult result = mvc.perform(get("/api/v1/auth/csrf").session(session)).andReturn();
+        return JsonPath.read(result.getResponse().getContentAsString(), "$.token");
     }
 
     private String credentials(String email, String password) {
