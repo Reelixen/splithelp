@@ -66,7 +66,7 @@ public class AuthController {
                 )
         );
 
-        // Rotate the session ID and discard the pre-login CSRF token.
+        // Rotate the session ID and discard the pre-login CSRF token
         sessionAuthenticationStrategy.onAuthentication(authentication, request, response);
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
