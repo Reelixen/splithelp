@@ -3,6 +3,7 @@ package com.reelixen.splithelp.common.exception;
 import com.reelixen.splithelp.auth.EmailAlreadyExistsException;
 import com.reelixen.splithelp.common.dto.ApiError;
 import com.reelixen.splithelp.common.dto.ValidationErrorResponse;
+import com.reelixen.splithelp.workout.WorkoutNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -70,5 +71,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(response);
+    }
+
+    @ExceptionHandler(WorkoutNotFoundException.class)
+    public ResponseEntity<ApiError> handleWorkoutNotFound(
+            WorkoutNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        ApiError error = new ApiError(
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI(),
+                Instant.now()
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 }

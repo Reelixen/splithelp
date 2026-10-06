@@ -8,6 +8,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 public class WorkoutService {
     private final WorkoutRepository workoutRepository;
@@ -33,4 +36,39 @@ public class WorkoutService {
                 savedWorkout.getCreatedAt()
         );
     }
+
+    @Transactional(readOnly = true)
+    public List<WorkoutResponse> getAll(String email){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+
+        List<Workout> workouts = workoutRepository.findAllByUser_IdOrderByPerformedAtDesc(user.getId());
+        List<WorkoutResponse> responses = new ArrayList<>();
+        for (Workout workout : workouts) {
+            responses.add(new WorkoutResponse(
+                    workout.getId(),
+                    workout.getName(),
+                    workout.getPerformedAt(),
+                    workout.getCreatedAt()
+            ));
+        }
+        return responses;
+    }
+
+    @Transactional(readOnly = true)
+    public WorkoutResponse getById(String email, Long id){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+
+        Workout workout = workoutRepository.findByIdAndUser_Id(id, user.getId())
+                .orElseThrow(() -> new WorkoutNotFoundException());
+
+        return new WorkoutResponse(
+                workout.getId(),
+                workout.getName(),
+                workout.getPerformedAt(),
+                workout.getCreatedAt()
+        );
+    }
+
 }
